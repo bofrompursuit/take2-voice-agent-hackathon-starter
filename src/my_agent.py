@@ -83,7 +83,9 @@ class MyAgent(Agent):
         self.action_plans.append({"summary": summary, "next_steps": next_steps})
         return "Saved. The caller gets a text with this plan after the call."
 
-    async def text_summary(self, model: llm.LLM) -> str | None:
+    async def text_summary(
+        self, model: llm.LLM, history: llm.ChatContext
+    ) -> str | None:
         """The text sent to the caller after hanging up, or None to send nothing."""
         if self.action_plans:
             plan = self.action_plans[-1]
@@ -92,4 +94,4 @@ class MyAgent(Agent):
                 f"Your next steps: {plan['next_steps']}\n\nYou've got this."
             )
         # Hung up before the wrap-up: summarize the conversation instead.
-        return await summarize_call(model, self.session.history)
+        return await summarize_call(model, history)

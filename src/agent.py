@@ -138,7 +138,8 @@ async def entrypoint(ctx: JobContext) -> None:
         if not hasattr(agent, "text_summary") or not caller.get("phone"):
             return
         try:
-            body = await agent.text_summary(models.llm)
+            # The agent has stopped by now, so pass the history in.
+            body = await agent.text_summary(models.llm, session.history)
             if body:
                 await send_sms(caller["phone"], body)
         except Exception:
