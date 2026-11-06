@@ -14,6 +14,7 @@ import logging
 import os
 
 from dotenv import load_dotenv
+from livekit import rtc
 from livekit.agents import (
     Agent,
     AgentServer,
@@ -32,6 +33,7 @@ from booking_agent import BookingAgent
 from models import load_models
 from my_agent import MyAgent
 from screener_agent import ScreenerAgent
+from sms import send_sms
 
 logger = logging.getLogger("agent")
 
@@ -128,8 +130,24 @@ async def entrypoint(ctx: JobContext) -> None:
 
     ctx.add_shutdown_callback(log_usage)
 
+    agent = pick_agent()
+    caller: dict[str, str] = {}
+
+    async def text_caller() -> None:
+        # Agents that define text_summary() text the caller after hanging up.
+        if not hasattr(agent, "text_summary") or not caller.get("phone"):
+            return
+        try:
+            body = await agent.text_summary(models.llm)
+            if body:
+                await send_sms(caller["phone"], body)
+        except Exception:
+            logger.exception("failed to text the call summary")
+
+    ctx.add_shutdown_callback(text_caller)
+
     await session.start(
-        agent=pick_agent(),
+        agent=agent,
         room=ctx.room,
         room_options=room_io.RoomOptions(
             audio_input=room_io.AudioInputOptions(
@@ -144,6 +162,13 @@ async def entrypoint(ctx: JobContext) -> None:
     )
 
     await ctx.connect()
+
+    # Phone callers join as a SIP participant carrying their number.
+    participant = await ctx.wait_for_participant(
+        kind=rtc.ParticipantKind.PARTICIPANT_KIND_SIP
+    )
+    if phone := participant.attributes.get("sip.phoneNumber"):
+        caller["phone"] = phone
 
 
 if __name__ == "__main__":
