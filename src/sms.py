@@ -26,7 +26,7 @@ SUMMARY_PROMPT = """
 You write the text message a career coach sends a caller right after a phone
 session. Using the transcript, write under 400 characters of plain text: one
 sentence on what you talked about, then the next steps the caller mentioned or
-agreed to, each with its timeframe if one came up. Start with "Compass here."
+agreed to, each with its timeframe if one came up. Start with "PAT here."
 No markdown or emojis. If nothing useful was discussed, reply with only: NONE
 """
 
